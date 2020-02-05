@@ -73,11 +73,16 @@ jobs:
   go_unit_tests:
     name: Go unit tests
     runs-on: ubuntu-18.04
-    container:
-      image: golang:1.13.4
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Try to load cached Go modules
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
     - name: Go unit tests
       env:
         GITCOOKIE_SH: ${{ secrets.GITCOOKIE_SH }}
@@ -106,11 +111,16 @@ jobs:
   go_fmt:
     name: Go Format
     runs-on: ubuntu-18.04
-    container:
-      image: golang:1.13.4
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Try to load cached Go modules
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
     - name: Format
       env:
         GITCOOKIE_SH: ${{ secrets.GITCOOKIE_SH }}
