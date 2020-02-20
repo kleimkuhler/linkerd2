@@ -7,8 +7,6 @@ on:
     - '**/*.md'
     branches:
     - master
-    tags:
-    - "*"
 jobs:
   go_dependencies:
     name: Go dependencies
