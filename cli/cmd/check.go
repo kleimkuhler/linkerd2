@@ -30,6 +30,7 @@ type checkOptions struct {
 }
 
 // Test comment
+// Test comment 2
 func newCheckOptions() *checkOptions {
 	return &checkOptions{
 		versionOverride:    "",
