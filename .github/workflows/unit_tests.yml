@@ -7,8 +7,6 @@ on:
     - '**/*.md'
     branches:
     - master
-    tags:
-    - "*"
 jobs:
   go_unit_tests:
     name: Go unit tests
