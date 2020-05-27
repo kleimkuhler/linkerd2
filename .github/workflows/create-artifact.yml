@@ -1,0 +1,47 @@
+name: Create artifact
+on:
+  repository_dispatch:
+    types: [create-artifact]
+jobs:
+  create_artifact:
+    - name: Checkout code
+      # actions/checkout@v2
+      uses: actions/checkout@722adc6
+    - name: Set environment variables from scripts
+      run: |
+        . bin/_tag.sh
+        echo ::set-env name=TAG::$(CI_FORCE_CLEAN=1 bin/root-tag)
+
+        . bin/_docker.sh
+        echo ::set-env name=DOCKER_REGISTRY::$DOCKER_REGISTRY
+    - name: Create artifact with CLI and image archives
+      env:
+        ARCHIVES: /home/runner/archives
+      run: |
+        mkdir -p $ARCHIVES
+
+        for image in proxy controller web cni-plugin debug cli-bin grafana; do
+          docker save "$DOCKER_REGISTRY/$image:$TAG" > $ARCHIVES/$image.tar || tee save_fail &
+        done
+
+        # Wait for `docker save` background processes to complete. Exit early
+        # if any job failed.
+        wait < <(jobs -p)
+        test -f save_fail && exit 1 || true
+    # `with.path` values do not support environment variables yet, so an
+    # absolute path is used here.
+    #
+    # https://github.com/actions/upload-artifact/issues/8
+    - name: Upload artifact
+      # actions/upload-artifact@v1
+      uses: actions/upload-artifact@3446296
+      with:
+        name: image-archives
+        path: /home/runner/archives
+    - name: Start KinD integration tests
+      # peter-evans/repository-dispatch@v1
+      uses: peter-evans/repository-dispatch@0ae1c4b
+      with:
+        token: ${{ secrets.RELEASE_TOKEN }}
+        repository: linkerd/linkerd2
+        event-type: kind-integration-tests

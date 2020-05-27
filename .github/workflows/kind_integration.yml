@@ -1,75 +1,15 @@
 name: KinD integration
 on:
-  pull_request: {}
-  push:
-    paths-ignore:
-    - '*.md'
-    - '**/*.md'
-    branches:
-    - master
+  repository_dispatch:
+    types: [kind-integration-tests]
 env:
   GH_ANNOTATION: true
 jobs:
-  docker_build:
-    name: Docker build
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Checkout code
-      # actions/checkout@v2
-      uses: actions/checkout@722adc6
-    - name: Set environment variables from scripts
-      run: |
-        . bin/_tag.sh
-        echo ::set-env name=TAG::$(CI_FORCE_CLEAN=1 bin/root-tag)
-
-        . bin/_docker.sh
-        echo ::set-env name=DOCKER_REGISTRY::$DOCKER_REGISTRY
-    - name: Setup SSH config for Packet
-      if: github.event_name == 'push' || !github.event.pull_request.head.repo.fork
-      run: |
-        mkdir -p ~/.ssh/
-        touch ~/.ssh/id && chmod 600 ~/.ssh/id
-        echo "${{ secrets.DOCKER_SSH_CONFIG }}"  > ~/.ssh/config
-        echo "${{ secrets.DOCKER_PRIVATE_KEY }}" > ~/.ssh/id
-        echo "${{ secrets.DOCKER_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-        ssh linkerd-docker docker version
-        echo ::set-env name=DOCKER_HOST::ssh://linkerd-docker
-    - name: Build docker images
-      env:
-        DOCKER_TRACE: 1
-      run: |
-        export PATH="`pwd`/bin:$PATH"
-        bin/docker-build
-    - name: Create artifact with CLI and image archives
-      env:
-        ARCHIVES: /home/runner/archives
-      run: |
-        mkdir -p $ARCHIVES
-
-        for image in proxy controller web cni-plugin debug cli-bin grafana; do
-          docker save "$DOCKER_REGISTRY/$image:$TAG" > $ARCHIVES/$image.tar || tee save_fail &
-        done
-
-        # Wait for `docker save` background processes to complete. Exit early
-        # if any job failed.
-        wait < <(jobs -p)
-        test -f save_fail && exit 1 || true
-    # `with.path` values do not support environment variables yet, so an
-    # absolute path is used here.
-    #
-    # https://github.com/actions/upload-artifact/issues/8
-    - name: Upload artifact
-      # actions/upload-artifact@v1
-      uses: actions/upload-artifact@3446296
-      with:
-        name: image-archives
-        path: /home/runner/archives
   # todo: Keep in sync with `release.yml`
   kind_integration_tests:
     strategy:
       matrix:
         integration_test: [deep, upgrade, helm, helm_upgrade, uninstall, custom_domain, external_issuer]
-    needs: [docker_build]
     name: Integration tests (${{ matrix.integration_test }})
     runs-on: ubuntu-18.04
     steps:
