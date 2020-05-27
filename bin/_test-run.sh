@@ -47,7 +47,6 @@ upgrade_integration_tests() {
     # 3. if failed, exit script to avoid leaving behind stale resources which will
     # fail subsequent tests. `cleanup` is not called if this test failed so that
     # there is a chance to debug the problem
-    echo 'Running upgrade integration test..'
     run_upgrade_test "$linkerd_namespace"-upgrade
     exit_on_err "can't upgrade to version $linkerd_version"
     cleanup
@@ -169,28 +168,21 @@ run_test(){
 # $1 - namespace to use for the stable release
 install_stable() {
     tmp=$(mktemp -d -t l5dbin.XXX)
-    echo 'Made tmp..'
     trap "rm -rf $tmp" RETURN
 
     curl -s https://run.linkerd.io/install | HOME=$tmp sh > /dev/null 2>&1
-    echo 'successfully curled..'
 
     local linkerd_path=$tmp/.linkerd2/bin/linkerd
     local stable_namespace=$1
     local test_app_namespace=$stable_namespace-upgrade-test
-    echo 'installing linkerd..'
+    $linkerd_path check --pre --linkerd-namespace="$stable_namespace" 2>&1
     $linkerd_path install --linkerd-namespace="$stable_namespace" | kubectl --context=$k8s_context apply -f - > /dev/null 2>&1
-    echo 'checking linkerd..'
     $linkerd_path check --linkerd-namespace="$stable_namespace" 2>&1
 
     #Now we need to install the app that will be used to verify that upgrade does not break anything
-    echo 'creating namespace..'
     kubectl --context=$k8s_context create namespace "$test_app_namespace" > /dev/null 2>&1
-    echo 'labeling namespace..'
     kubectl --context=$k8s_context label namespaces "$test_app_namespace" 'linkerd.io/is-test-data-plane'='true' > /dev/null 2>&1
-    echo 'injecing..'
     $linkerd_path inject --linkerd-namespace="$stable_namespace" "$test_directory/testdata/upgrade_test.yaml" | kubectl --context=$k8s_context apply --namespace="$test_app_namespace" -f - > /dev/null 2>&1
-    echo 'injected..'
 }
 
 # Run the upgrade test by upgrading the most-recent stable release to the HEAD of
@@ -200,11 +192,8 @@ run_upgrade_test() {
     local stable_namespace=$1
     local stable_version=$(latest_stable)
 
-    echo 'Installing stable..'
     install_stable $stable_namespace
-    echo 'Running install test..'
     run_test "$test_directory/install_test.go" --upgrade-from-version=$stable_version --linkerd-namespace=$stable_namespace
-    echo 'Install test passed..'
 }
 
 setup_helm() {
