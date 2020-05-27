@@ -1,0 +1,52 @@
+name: Docker build
+on:
+  pull_request: {}
+  push:
+    branches:
+    - master
+    paths-ignore:
+    - '*.md'
+    - '**/*.md'
+    tags:
+    - "*"
+jobs:
+  docker_build:
+    name: Docker build
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout code
+      # actions/checkout@v2
+      uses: actions/checkout@722adc6
+    - name: Setup SSH config for Packet
+      if: github.event_name == 'push' || !github.event.pull_request.head.repo.fork
+      run: |
+        mkdir -p ~/.ssh/
+        touch ~/.ssh/id && chmod 600 ~/.ssh/id
+        echo "${{ secrets.DOCKER_SSH_CONFIG }}"  > ~/.ssh/config
+        echo "${{ secrets.DOCKER_PRIVATE_KEY }}" > ~/.ssh/id
+        echo "${{ secrets.DOCKER_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+        ssh linkerd-docker docker version
+        echo ::set-env name=DOCKER_HOST::ssh://linkerd-docker
+    - name: Build docker images
+      env:
+        DOCKER_TRACE: 1
+      run: |
+        export PATH="`pwd`/bin:$PATH"
+        bin/docker-build
+    - name: Start creating artifact
+      # if: if a release, do not create artifact
+      # peter-evans/repository-dispatch@v1
+      uses: peter-evans/repository-dispatch@0ae1c4b
+      with:
+        token: ${{ secrets.RELEASE_TOKEN }}
+        repository: kleimkuhler/linkerd2
+        event-type: create-artifact
+    - name: Start docker push
+      if: github.event_name == 'push'
+      # peter-evans/repository-dispatch@v1
+      uses: peter-evans/repository-dispatch@0ae1c4b
+      with:
+        token: ${{ secrets.RELEASE_TOKEN }}
+        repository: kleimkuhler/linkerd2
+        event-type: docker_push
+        client-payload: '{"release": "false"}'
