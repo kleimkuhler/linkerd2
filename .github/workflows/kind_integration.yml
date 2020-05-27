@@ -156,4 +156,5 @@ jobs:
         . bin/_test-run.sh
 
         init_test_run $HOME/.linkerd
+        cat bin/_test-run.sh
         ${{ matrix.integration_test }}_integration_tests
