@@ -45,6 +45,7 @@ upgrade_integration_tests() {
     # 3. if failed, exit script to avoid leaving behind stale resources which will
     # fail subsequent tests. `cleanup` is not called if this test failed so that
     # there is a chance to debug the problem
+    echo 'Running upgrade integration test..'
     run_upgrade_test "$linkerd_namespace"-upgrade
     exit_on_err "can't upgrade to version $linkerd_version"
     cleanup
@@ -189,7 +190,9 @@ run_upgrade_test() {
     local stable_namespace=$1
     local stable_version=$(latest_stable)
 
+    echo 'Installing stable..'
     install_stable $stable_namespace
+    echo 'Running install test..'
     run_test "$test_directory/install_test.go" --upgrade-from-version=$stable_version --linkerd-namespace=$stable_namespace
 }
 
