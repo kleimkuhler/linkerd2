@@ -181,7 +181,7 @@ install_stable() {
     echo 'installing linkerd..'
     $linkerd_path install --linkerd-namespace="$stable_namespace" | kubectl --context=$k8s_context apply -f - > /dev/null 2>&1
     echo 'checking linkerd..'
-    $linkerd_path check --linkerd-namespace="$stable_namespace" > /dev/null 2>&1
+    $linkerd_path check --linkerd-namespace="$stable_namespace" 2>&1
 
     #Now we need to install the app that will be used to verify that upgrade does not break anything
     echo 'creating namespace..'
