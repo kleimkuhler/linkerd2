@@ -145,7 +145,7 @@ Help:
 }
 
 cleanup() {
-    "$bindir"/test-cleanup "$k8s_context" > /dev/null 2>&1
+    "$bindir"/test-cleanup "$k8s_context" 2>&1
     exit_on_err 'error removing existing Linkerd resources'
 }
 
