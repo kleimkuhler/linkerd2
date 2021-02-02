@@ -15,6 +15,7 @@ jobs:
     container:
       image: golang:1.15.7
     steps:
+    - run: go version
     - name: Checkout code
       # actions/checkout@v2
       uses: actions/checkout@722adc6
