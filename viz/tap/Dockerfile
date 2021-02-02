@@ -18,7 +18,12 @@ COPY viz/metrics-api/gen/viz viz/metrics-api/gen/viz
 COPY viz/metrics-api/client viz/metrics-api/client
 COPY viz/tap viz/tap
 COPY viz/pkg viz/pkg
+COPY charts/patch charts/patch
+COPY charts/partials charts/partials
 
+# Generate static templates
+# TODO: `go generate` does not honor -mod=readonly
+RUN go generate -mod=readonly ./pkg/charts/static
 ARG TARGETARCH
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -o /out/tap -tags prod -mod=readonly -ldflags "-s -w" ./viz/tap/cmd
 
