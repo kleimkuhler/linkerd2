@@ -53,7 +53,7 @@ jobs:
         ARCHIVES: /home/runner/archives
       run: |
         mkdir -p $ARCHIVES
-        docker save "ghcr.io/kleimkuhler/${{ matrix.target }}:$TAG" > $ARCHIVES/${{ matrix.target }}.tar
+        docker save "${{ env.DOCKER_REGISTRY }}/${{ matrix.target }}:$TAG" > $ARCHIVES/${{ matrix.target }}.tar
         # windows_static_cli_tests needs this binary to be available in the
         # image archive.
         if [ '${{ matrix.target }}' == 'cli-bin' ]; then
